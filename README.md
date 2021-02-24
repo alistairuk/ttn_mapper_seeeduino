@@ -54,7 +54,7 @@ function Decoder(bytes, port) {
 }
 ```
 
-Kudos to JP Meijers for this encoding format.
+This encoding format is compatible with some other trackers.
 
 Click the "Save the payload functions" button
 

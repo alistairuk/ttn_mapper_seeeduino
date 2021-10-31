@@ -8,7 +8,7 @@ Please note that this is a hacked together pet project and not a solid base for 
 
 ## Adding the device to The Things Network
 
-These instructions are for TTN V2 as at the time of creation TTN Mapper is not yet compatible with TTN V3. This will no doubt change in time.
+These instructions have been updated for TTN V3 console.
 
 Before stating it is worth testing your Seeeduino with the help of the code on the [Seeeduino LoRaWAN Wiki page](https://wiki.seeedstudio.com/Seeeduino_LoRAWAN/).
 
@@ -18,65 +18,75 @@ First go to your Things Network [applications console](https://console.thethings
 
 ### Adding the application
 
-Click "Add Application" (Green + to the right on the Applications section title)
+Click the blue "Add Application" button
 Enter an Application ID (It can be anything but must be universally unique. A random string is good)
-Click the "Add application" button
+Click the "Create application" button
 
 ### Adding the payload format decoder
 
-Click "Payload Formats" from the menu bar
-"Custom" and the "Decoder" tab should already be selected
+Click "Payload Formats" from the left menu bar, and then click "custom" from the expanded options.
+
+From the "Format Type" selector select "Javascript"
 
 Paste the following function in to the edit field replacing anything already in there.
 
 ```javascript
-function Decoder(bytes, port) {
+function decodeUplink(input) {
   // Decode an uplink message from a buffer
-  // (array) of bytes to an object of fields.
+  // (array) of input.bytes to an object of fields.
   var decoded = {};
-  // if (port === 1) decoded.led = bytes[0];
-  decoded.lat = ((bytes[0]<<16)>>>0) + ((bytes[1]<<8)>>>0) + bytes[2];
-  decoded.lat = (decoded.lat / 16777215.0 * 180) - 90;
-  decoded.lon = ((bytes[3]<<16)>>>0) + ((bytes[4]<<8)>>>0) + bytes[5];
-  decoded.lon = (decoded.lon / 16777215.0 * 360) - 180;
-  var altValue = ((bytes[6]<<8)>>>0) + bytes[7];
-  var sign = bytes[6] & (1 << 7);
+  // if (port === 1) decoded.led = input.bytes[0];
+  decoded.latitude = ((input.bytes[0]<<16)>>>0) + ((input.bytes[1]<<8)>>>0) + input.bytes[2];
+  decoded.latitude = (decoded.latitude / 16777215.0 * 180) - 90;
+  decoded.longitude = ((input.bytes[3]<<16)>>>0) + ((input.bytes[4]<<8)>>>0) + input.bytes[5];
+  decoded.longitude = (decoded.longitude / 16777215.0 * 360) - 180;
+  var altValue = ((input.bytes[6]<<8)>>>0) + input.bytes[7];
+  var sign = input.bytes[6] & (1 << 7);
   if(sign)
   {
-    decoded.alt = 0xFFFF0000 | altValue;
+    decoded.altitude = 0xFFFF0000 | altValue;
   }
   else
   {
-    decoded.alt = altValue;
+    decoded.altitude = altValue;
   }
-  decoded.hdop = bytes[8] / 10.0;
-  return decoded;
+  decoded.hdop = input.bytes[8] / 10.0;
+  return {
+    data: decoded,
+    warnings: [],
+    errors: []
+  };
 }
 ```
 
 This encoding format is compatible with some other trackers.
 
-Click the "Save the payload functions" button
+Click the "Save changes" button
 
 ### Adding the TTN Mapper Integration
 
-Click "Integrations" from the menu bar
-Click Add Integration (Grey + to the right on the Applications section title)
+Click "Integrations" from the left menu bar, and then click "Webhooks" from the expanded options.
+Click the blue "Add webhook" button
 Click TTN Mapper icon	
-Enter a Process ID (it can be anything)
+Enter a Webhook ID (it can be anything)
 Enter your E-mail address
-Leave everything else blank
-Click the "Add Integration" button
+Leave "Experiment name" blank or things will go wrong
+Click the "Create ttn mapper webhook" button
 
 ### Adding your device
 
-Click "Overview" from the menu bar
-Click Register Device (Green + to the right on the Devices section title)
-Enter an Application ID (This should be unique to you and will be visible on TTN Mapper)
-Click the generate Device EUI button (Crossed arrows to the left of the Device EUI field)
-Click the "Register" button
+Click "Overview" from the left menu bar (not the top menu bar)
+Click the blue "Add end device" button
+Click "Manually" under the "Register end device" title
+Select a Frequency plan ("Europe 863-870 MHz (SF9 for RX2 - recommended)" is normaly good)
+Select a LoRaWAN vesrion (I presuming "MAC V1.0" going by feature specification)
+Click the grey "Generate" button next to the DevEUI edit field
+Click the grey "Fill with zeros" button next to the AppEUI edit field or enter a randon value
+Click the grey "Generate" button next to the AppKey edit field
+Enter an End device ID (This should be unique to you and will be visible on TTN Mapper)
+Click the "Register end device" button
 
-Copy the Device EUI, Application EUI, and App Key now shown to the placeholders in the Arduino code's setup() function (just use the copy buttons to the right of the field)
+Now copy the AppEUI, DevEUI, and AppKey shown to the placeholders in the Arduino code's setup() function (just use the copy buttons to the right of the field)
 
 ### Uploading the firmware
 
